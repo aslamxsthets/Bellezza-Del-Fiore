@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bellezza del fiore — Piano Studio</title>
+<script src="https://unpkg.com/tone@15.1.22/build/Tone.js"></script>
+
+<style>
+:root {
+  --white-width:48px;
+  --text:#effcff;
+  --muted:#a9d9e9;
+  --pink:#75efff;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  min-height:100vh;
+  position:relative;
+  isolation:isolate;
+  color:var(--text);
+  font-family:"Segoe UI",Arial,sans-serif;
+  background:#031a35;
+}
+body::before {
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  background:
+    linear-gradient(180deg,rgba(0,12,32,.15),rgba(0,10,29,.5)),
+    url("bellezza_underwater_theme.webp") center/cover no-repeat;
+}
+button,input {font:inherit}
+button {
+  color:#eafcff;
+  background:rgba(9,48,76,.78);
+  border:1px solid rgba(115,225,255,.34);
+  border-radius:9px;
+  padding:8px 12px;
+  cursor:pointer;
+  transition:.15s;
+}
+button:hover {
+  background:rgba(15,93,119,.88);
+  border-color:#8af4ff;
+}
+button.active {
+  background:linear-gradient(135deg,rgba(15,183,209,.75),rgba(39,103,177,.82));
+  border-color:#9cf8ff;
+  box-shadow:0 0 12px rgba(55,226,255,.3);
+}
+header {
+  text-align:center;
+  padding:26px 15px 18px;
+  text-shadow:0 0 20px rgba(42,224,255,.5);
+}
+header h1 {
+  margin:0;
+  font:400 clamp(29px,4vw,47px) "Palatino Linotype",Georgia,serif;
+  letter-spacing:2px;
+  color:#e5fcff;
+}
+header p {
+  margin:8px 0 0;
+  color:#bcefff;
+  letter-spacing:4px;
+  font-size:11px;
+}
+main {
+  position:relative;
+  z-index:1;
+  width:min(1250px,100%);
+  margin:auto;
+  padding:12px 18px 40px;
+}
+.toolbar,.control-panel,.piano-section {
+  background:rgba(2,20,43,.76);
+  border:1px solid rgba(105,224,255,.35);
+  border-radius:15px;
+  box-shadow:0 12px 38px rgba(0,8,27,.27);
+  backdrop-filter:blur(13px) saturate(125%);
+  -webkit-backdrop-filter:blur(13px) saturate(125%);
+}
+.toolbar,.control-panel {
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:13px;
+  margin-bottom:14px;
+}
+.toolbar {justify-content:space-between}
+.toolbar-group {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  flex-wrap:wrap;
+}
+.small-label {
+  color:var(--muted);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+}
+.control {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  font-size:12px;
+}
+.control label {color:var(--muted)}
+input[type=range] {
+  width:100px;
+  accent-color:#69eaff;
+}
+.value,.range-label {color:#c7f8ff}
+.value {min-width:43px;font-size:11px}
+.piano-section {
+  padding:15px;
+  margin-bottom:15px;
+}
+.row-heading {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-bottom:12px;
+}
+.row-heading h2 {font-size:15px;margin:0}
+.row-heading span {color:var(--muted);font-size:10px}
+.navigator-area {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  margin-bottom:12px;
+}
+.nav-controls {display:flex;gap:4px;flex-shrink:0}
+.nav-controls button {min-width:29px;padding:6px 8px}
+.mini-scroll {flex:1;min-width:0;overflow-x:auto}
+.mini-keyboard {
+  position:relative;
+  min-width:620px;
+  width:100%;
+  height:42px;
+  background:#f5edf3;
+  border:1px solid #57445e;
+  border-radius:4px;
+  overflow:hidden;
+  touch-action:pan-y;
+  user-select:none;
+}
+.mini-white {
+  position:absolute;
+  top:0;
+  height:100%;
+  background:linear-gradient(#fff,#e8dfe9);
+  border-right:1px solid #c2b7c4;
+}
+.mini-black {
+  position:absolute;
+  top:0;
+  height:65%;
+  background:linear-gradient(#282130,#17131e);
+  border:1px solid #66516a;
+  z-index:2;
+  pointer-events:none;
+}
+.mini-selection {
+  position:absolute;
+  z-index:4;
+  top:0;
+  bottom:0;
+  border:2px solid #55eaff;
+  background:rgba(61,219,255,.28);
+  cursor:grab;
+  touch-action:none;
+}
+.range-label {
+  min-width:90px;
+  text-align:center;
+  white-space:nowrap;
+  font-size:11px;
+}
+.key-size-controls {
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:8px;
+}
+.key-size-controls button {
+  width:27px;
+  height:26px;
+  padding:0;
+}
+.key-size-controls span {
+  min-width:65px;
+  text-align:center;
+  color:var(--muted);
+  font-size:10px;
+}
+.piano-scroll {
+  width:100%;
+  overflow-x:auto;
+  overflow-y:hidden;
+  display:flex;
+  justify-content:center;
+  padding:8px 2px 12px;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.piano {
+  position:relative;
+  flex:0 0 auto;
+  height:190px;
+  margin:0 auto;
+  user-select:none;
+  touch-action:pan-y;
+}
+.white-key {
+  position:absolute;
+  top:0;
+  height:190px;
+  display:flex;
+  align-items:flex-end;
+  justify-content:center;
+  padding-bottom:8px;
+  color:#24485c;
+  background:linear-gradient(#f4ffff,#d9f8ff 78%,#a9d8e8);
+  border:1px solid #9bc8d8;
+  border-radius:0 0 5px 5px;
+  z-index:1;
+}
+.black-key {
+  position:absolute;
+  top:0;
+  height:119px;
+  display:flex;
+  justify-content:center;
+  align-items:flex-end;
+  padding-bottom:8px;
+  color:#e5fbff;
+  background:linear-gradient(#214d68,#061b31 85%);
+  border:1px solid #071a2b;
+  border-radius:0 0 5px 5px;
+  box-shadow:0 4px 7px #0009;
+  z-index:3;
+}
+.white-key,.black-key {
+  transition:background .035s linear,box-shadow .035s linear,transform .035s linear;
+  touch-action:manipulation;
+  user-select:none;
+  -webkit-user-select:none;
+  -webkit-tap-highlight-color:transparent;
+}
+.white-key.pressed {
+  background:linear-gradient(#dfffff,#8eeeff);
+  box-shadow:0 0 12px rgba(71,224,255,.55);
+  transform:translateY(1px);
+}
+.black-key.pressed {
+  background:linear-gradient(#42b6d4,#14507a);
+  box-shadow:0 0 12px rgba(71,224,255,.55);
+  transform:translateY(1px);
+}
+.key-label {font-size:11px;font-weight:600}
+.black-key .key-label {font-size:10px}
+.note-label {
+  position:absolute;
+  top:7px;
+  font-size:8px;
+  white-space:nowrap;
+}
+.white-key .note-label {color:#527185}
+.black-key .note-label {color:#c9e9f5}
+#flower-layer {
+  position:fixed;
+  inset:0;
+  z-index:99999;
+  overflow:hidden;
+  pointer-events:none;
+}
+.flower {
+  position:absolute;
+  width:52px;
+  height:52px;
+  will-change:transform,opacity;
+  filter:drop-shadow(0 0 10px var(--flower-colour));
+}
+.flower svg {width:100%;height:100%}
+@keyframes flower-float {
+  0% {
+    opacity:0;
+    transform:translate(-50%,0) scale(.25) rotate(-20deg);
+  }
+  15% {opacity:1}
+  100% {
+    opacity:0;
+    transform:translate(-50%,-145px) scale(1.3) rotate(55deg);
+  }
+}
+.status {color:#bceafa;font-size:11px;min-width:120px}
+.bottom-note {
+  text-align:center;
+  color:#a8d7e7;
+  font-size:11px;
+  line-height:1.8;
+  margin-top:20px;
+}
+.hidden {display:none!important}
+@media(max-width:650px) {
+  :root {--white-width:42px}
+  main {padding:7px 8px 24px}
+  header {padding:17px 10px 12px}
+  header h1 {font-size:clamp(23px,7vw,31px)}
+  header p {font-size:9px;letter-spacing:2px}
+  .toolbar,.control-panel {gap:9px;padding:10px}
+  .toolbar {align-items:flex-start}
+  .toolbar-group {width:100%;gap:5px}
+  .toolbar-group button {flex:1;min-width:0;padding:8px 5px;font-size:11px}
+  .control {flex:1 1 145px;min-width:0;flex-wrap:wrap}
+  .control input[type=range] {flex:1;min-width:75px;width:auto}
+  .status {flex:1 1 100%;min-width:0}
+  .piano-section {padding:10px 7px}
+  .row-heading h2 {font-size:13px}
+  .row-heading span {font-size:8px}
+  .nav-controls button {min-width:27px;min-height:34px}
+  .range-label {min-width:72px;font-size:9px}
+  .mini-keyboard {height:36px}
+  .piano,.white-key {height:175px}
+  .black-key {height:112px}
+}
+@media(max-width:380px) {
+  :root {--white-width:38px}
+  .range-label {min-width:65px}
+  .toolbar-group button {font-size:10px}
+}
+</style>
+</head>
+
+<body>
+<div id="flower-layer"></div>
+
+<header>
+  <h1>✿ Bellezza del fiore ✿</h1>
+  <p>CHAINSAW MAN — REZE ARC</p>
+</header>
+
+<main>
+<section class="toolbar">
+  <div class="toolbar-group">
+    <span class="small-label">Display</span>
+    <button class="active" data-mode="dual">Dual Row</button>
+    <button data-mode="upper">Upper Only</button>
+    <button data-mode="lower">Lower Only</button>
+  </div>
+  <div class="toolbar-group">
+    <span class="small-label">Instrument</span>
+    <button class="active" data-preset="concert">Concert Piano</button>
+    <button data-preset="acoustic">Acoustic</button>
+    <button data-preset="bright">Bright</button>
+  </div>
+</section>
+
+<section class="control-panel">
+  <div class="control">
+    <label for="volume">Volume</label>
+    <input id="volume" type="range" min="0" max="3" step=".01" value="2.25">
+    <span class="value" id="volumeValue">225%</span>
+  </div>
+  <div class="control">
+    <label for="bpm">Metronome</label>
+    <input id="bpm" type="range" min="40" max="220" value="90">
+    <span class="value" id="bpmValue">90 BPM</span>
+    <button id="metroButton">Start</button>
+  </div>
+  <button id="sustainButton">Sustain OFF</button>
+  <span class="small-label">Spacebar = Sustain</span>
+  <span class="status" id="audioStatus">Loading piano samples...</span>
+</section>
+
+<section class="control-panel">
+  <span class="small-label">Effects</span>
+  <button class="fx-button" data-fx="distortion">Distortion OFF</button>
+  <button class="fx-button" data-fx="reverb">Reverb OFF</button>
+  <button class="fx-button" data-fx="echo">Echo OFF</button>
+</section>
+
+<section class="piano-section" id="upperSection">
+  <div class="row-heading">
+    <h2>✿ Upper Keyboard</h2>
+    <span>Q W E R T Y U I O P [ · 2 3 5 6 7 9 0</span>
+  </div>
+  <div class="navigator-area">
+    <div class="nav-controls">
+      <button id="upperOctDown">≪</button>
+      <button id="upperKeyDown">‹</button>
+    </div>
+    <div class="mini-scroll">
+      <div class="mini-keyboard" id="upperMini"></div>
+    </div>
+    <div class="nav-controls">
+      <button id="upperKeyUp">›</button>
+      <button id="upperOctUp">≫</button>
+    </div>
+    <span class="range-label" id="upperRangeLabel"></span>
+  </div>
+  <div class="key-size-controls">
+    <button id="upperRemove">−</button>
+    <span id="upperCount"></span>
+    <button id="upperAdd">+</button>
+  </div>
+  <div class="piano-scroll">
+    <div class="piano" id="upperPiano"></div>
+  </div>
+</section>
+
+<section class="piano-section" id="lowerSection">
+  <div class="row-heading">
+    <h2>✿ Lower Keyboard</h2>
+    <span>Z X C V B N M , . / A · S D G H J L ;</span>
+  </div>
+  <div class="navigator-area">
+    <div class="nav-controls">
+      <button id="lowerOctDown">≪</button>
+      <button id="lowerKeyDown">‹</button>
+    </div>
+    <div class="mini-scroll">
+      <div class="mini-keyboard" id="lowerMini"></div>
+    </div>
+    <div class="nav-controls">
+      <button id="lowerKeyUp">›</button>
+      <button id="lowerOctUp">≫</button>
+    </div>
+    <span class="range-label" id="lowerRangeLabel"></span>
+  </div>
+  <div class="key-size-controls">
+    <button id="lowerRemove">−</button>
+    <span id="lowerCount"></span>
+    <button id="lowerAdd">+</button>
+  </div>
+  <div class="piano-scroll">
+    <div class="piano" id="lowerPiano"></div>
+  </div>
+</section>
+
+<p class="bottom-note">
+  Full piano range: A0 – C8 · 88 keys · 12 semitones per octave<br>
+  Independent keyboards · Polyphonic notes · Flower effects<br>
+  On phones and tablets: tap or hold the keys; use multiple fingers for chords.
+</p>
+</main>
+
+<script>
+"use strict";
+
+/* ==========================================
+   BASIC CONFIGURATION
+========================================== */
+
+Tone.context.lookAhead=0.01;
+Tone.context.updateInterval=0.01;
+
+const NOTES=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const PIANO_MIN=21;
+const PIANO_MAX=108;
+const WHITE_COUNT=52;
+const MAX_KEYS=17;
+
+const ROWS={
+  upper:{
+    startMidi:72,
+    count:17,
+    whiteKeys:[
+      ["KeyQ","Q"],["KeyW","W"],["KeyE","E"],["KeyR","R"],
+      ["KeyT","T"],["KeyY","Y"],["KeyU","U"],["KeyI","I"],
+      ["KeyO","O"],["KeyP","P"],["BracketLeft","["]
+    ],
+    blackKeys:[
+      ["Digit2","2"],["Digit3","3"],["Digit5","5"],
+      ["Digit6","6"],["Digit7","7"],["Digit9","9"],["Digit0","0"]
+    ],
+    pianoId:"upperPiano"
+  },
+  lower:{
+    startMidi:60,
+    count:17,
+    whiteKeys:[
+      ["KeyZ","Z"],["KeyX","X"],["KeyC","C"],["KeyV","V"],
+      ["KeyB","B"],["KeyN","N"],["KeyM","M"],["Comma",","],
+      ["Period","."],["Slash","/"],["KeyA","A"]
+    ],
+    blackKeys:[
+      ["KeyS","S"],["KeyD","D"],["KeyG","G"],
+      ["KeyH","H"],["KeyJ","J"],["KeyL","L"],["Semicolon",";"]
+    ],
+    pianoId:"lowerPiano"
+  }
+};
+
+const FLOWERS=[
+  {colour:"#ffb8d9",center:"#fff0f6"},
+  {colour:"#ffe28a",center:"#9a6434"},
+  {colour:"#c9a7ff",center:"#f3dfff"},
+  {colour:"#9ddcff",center:"#fff2a6"},
+  {colour:"#ff9b9b",center:"#ffe0e0"},
+  {colour:"#ffc39e",center:"#fff0dc"},
+  {colour:"#c5e9b8",center:"#fff8d1"}
+];
+
+const isBlack=m=>[1,3,6,8,10].includes(m%12);
+const noteName=m=>NOTES[((m%12)+12)%12]+(Math.floor(m/12)-1);
+const clamp=(n,min,max)=>Math.max(min,Math.min(max,n));
+
+/* ==========================================
+   KEY POSITION CALCULATIONS
+========================================== */
+
+const whiteIndexByMidi=new Map();
+const blackCenterByMidi=new Map();
+let whiteCounter=0;
+
+for(let midi=PIANO_MIN;midi<=PIANO_MAX;midi++){
+  if(isBlack(midi))blackCenterByMidi.set(midi,whiteCounter);
+  else whiteIndexByMidi.set(midi,whiteCounter++);
+}
+
+function keyGeometry(midi){
+  if(!isBlack(midi)){
+    const index=whiteIndexByMidi.get(midi);
+    return {left:index,right:index+1,center:index+.5};
+  }
+  const center=blackCenterByMidi.get(midi);
+  return {left:center-.295,right:center+.295,center};
+}
+
+function closestMidiAtWhitePosition(position){
+  let best=PIANO_MIN;
+  let distance=Infinity;
+  for(let midi=PIANO_MIN;midi<=PIANO_MAX;midi++){
+    const d=Math.abs(keyGeometry(midi).center-position);
+    if(d<distance){distance=d;best=midi;}
+  }
+  return best;
+}
+
+/* ==========================================
+   COMPUTER KEY MAPPING
+========================================== */
+
+function mappingFor(row){
+  const c=ROWS[row];
+  const whites=[];
+  const blacks=[];
+
+  for(let m=c.startMidi;m<c.startMidi+c.count;m++){
+    (isBlack(m)?blacks:whites).push(m);
+  }
+
+  const map=new Map();
+
+  c.whiteKeys.forEach(([code,label],i)=>{
+    if(whites[i]!==undefined)map.set(code,{midi:whites[i],label});
+  });
+
+  c.blackKeys.forEach(([code,label],i)=>{
+    if(blacks[i]!==undefined)map.set(code,{midi:blacks[i],label});
+  });
+
+  return map;
+}
+
+function keyForMidi(row,midi){
+  for(const item of mappingFor(row).values()){
+    if(item.midi===midi)return item.label;
+  }
+  return "";
+}
+
+/* ==========================================
+   AUDIO ENGINE — STABLE ROUTING
+========================================== */
+
+let sampler=null;
+let samplerReady=false;
+let samplerLoading=null;
+let audioStarting=null;
+
+let masterGain=null;
+let outputCompressor=null;
+let outputLimiter=null;
+let pianoEQ=null;
+let pianoFilter=null;
+
+let reverb=null;
+let delay=null;
+let distortion=null;
+
+let reverbGain=null;
+let echoGain=null;
+let distortionGain=null;
+
+let currentPreset="concert";
+let volume=2.25;
+let sustain=false;
+
+const FX={
+  distortion:false,
+  reverb:false,
+  echo:false
+};
+
+const PRESETS={
+  concert:{low:0,mid:0,high:0,filter:16000,q:.5,release:1.1},
+  acoustic:{low:2.5,mid:1,high:-7,filter:7500,q:.8,release:1.45},
+  bright:{low:-2,mid:4,high:9,filter:19500,q:.4,release:.8}
+};
+
+function setStatus(message){
+  document.getElementById("audioStatus").textContent=message;
+}
+
+function audioContextIsRunning(){
+  try {
+    return Tone.context.state==="running";
+  } catch(error) {
+    return false;
+  }
+}
+
+/*
+  Important:
+  Never rely on a permanent audioUnlocked boolean.
+  Browsers can suspend the AudioContext at any time.
+*/
+
+function unlockAudio(){
+  if(audioContextIsRunning())return Promise.resolve();
+
+  if(audioStarting)return audioStarting;
+
+  audioStarting=Tone.start().then(()=>{
+    if(!audioContextIsRunning()){
+      throw new Error("Audio context did not resume.");
+    }
+
+    setStatus(samplerReady?"Piano ready":"Loading piano samples...");
+    playPendingNotes();
+
+  }).catch(error=>{
+    console.error("Audio resume failed:",error);
+    setStatus("Audio paused — tap a piano key to resume");
+    throw error;
+
+  }).then(value=>{
+    audioStarting=null;
+    return value;
+
+  },error=>{
+    audioStarting=null;
+    throw error;
+  });
+
+  return audioStarting;
+}
+
+/* ==========================================
+   AUDIO GRAPH
+========================================== */
+
+function createAudioEngine(){
+  if(samplerLoading)return samplerLoading;
+
+  masterGain=new Tone.Gain(volume);
+
+  outputCompressor=new Tone.Compressor({
+    threshold:-8,
+    ratio:12,
+    attack:.003,
+    release:.15,
+    knee:6
+  });
+
+  outputLimiter=new Tone.Limiter(-1.5);
+
+  masterGain.connect(outputCompressor);
+  outputCompressor.connect(outputLimiter);
+  outputLimiter.toDestination();
+
+  // Permanent dry path.
+  pianoEQ=new Tone.EQ3({
+    low:0,
+    mid:0,
+    high:0,
+    lowFrequency:250,
+    highFrequency:3000
+  });
+
+  pianoFilter=new Tone.Filter({
+    frequency:16000,
+    type:"lowpass",
+    Q:.5
+  });
+
+  pianoEQ.connect(pianoFilter);
+  pianoFilter.connect(masterGain);
+
+  // Reverb is a parallel send, not a replacement for the dry signal.
+  reverb=new Tone.Reverb({
+    decay:3.5,
+    wet:1
+  });
+
+  reverbGain=new Tone.Gain(0);
+  reverb.connect(reverbGain);
+  reverbGain.connect(masterGain);
+
+  // Echo is a parallel send.
+  delay=new Tone.FeedbackDelay({
+    delayTime:.35,
+    feedback:.35,
+    wet:1
+  });
+
+  echoGain=new Tone.Gain(0);
+  delay.connect(echoGain);
+  echoGain.connect(masterGain);
+
+  // Distortion is a parallel send.
+  distortion=new Tone.Distortion({
+    distortion:.65,
+    oversample:"4x",
+    wet:1
+  });
+
+  distortionGain=new Tone.Gain(0);
+  distortion.connect(distortionGain);
+  distortionGain.connect(masterGain);
+
+  const urls={
+    A0:"A0.mp3",
+    C1:"C1.mp3",
+    "D#1":"Ds1.mp3",
+    "F#1":"Fs1.mp3",
+    A1:"A1.mp3",
+    C2:"C2.mp3",
+    "D#2":"Ds2.mp3",
+    "F#2":"Fs2.mp3",
+    A2:"A2.mp3",
+    C3:"C3.mp3",
+    "D#3":"Ds3.mp3",
+    "F#3":"Fs3.mp3",
+    A3:"A3.mp3",
+    C4:"C4.mp3",
+    "D#4":"Ds4.mp3",
+    "F#4":"Fs4.mp3",
+    A4:"A4.mp3",
+    C5:"C5.mp3",
+    "D#5":"Ds5.mp3",
+    "F#5":"Fs5.mp3",
+    A5:"A5.mp3",
+    C6:"C6.mp3",
+    "D#6":"Ds6.mp3",
+    "F#6":"Fs6.mp3",
+    A6:"A6.mp3",
+    C7:"C7.mp3",
+    "D#7":"Ds7.mp3",
+    "F#7":"Fs7.mp3",
+    A7:"A7.mp3",
+    C8:"C8.mp3"
+  };
+
+  samplerLoading=new Promise((resolve,reject)=>{
+    sampler=new Tone.Sampler({
+      urls,
+      baseUrl:"https://tonejs.github.io/audio/salamander/",
+      release:1,
+      onload:()=>{
+        /*
+          One permanent dry route plus three independent effect sends.
+          Turning any effect off cannot disconnect the piano.
+        */
+        sampler.connect(pianoEQ);
+        sampler.connect(reverb);
+        sampler.connect(delay);
+        sampler.connect(distortion);
+
+        samplerReady=true;
+        applyPreset();
+        applyEffects();
+
+        setStatus("Piano samples ready");
+        playPendingNotes();
+        resolve();
+      },
+      onerror:error=>{
+        console.error("Piano sample error:",error);
+        setStatus("Sample loading failed");
+        reject(error);
+      }
+    });
+  });
+
+  return samplerLoading;
+}
+
+function applyPreset(){
+  if(!pianoEQ)return;
+
+  const p=PRESETS[currentPreset];
+
+  pianoEQ.low.value=p.low;
+  pianoEQ.mid.value=p.mid;
+  pianoEQ.high.value=p.high;
+
+  pianoFilter.frequency.rampTo(p.filter,.1);
+  pianoFilter.Q.rampTo(p.q,.1);
+
+  if(sampler)sampler.release=p.release;
+}
+
+function applyEffects(){
+  if(!reverbGain || !echoGain || !distortionGain)return;
+
+  const now=Tone.now();
+
+  // Cancel previous ramps before applying the new effect state.
+  for(const gain of [
+    reverbGain.gain,
+    echoGain.gain,
+    distortionGain.gain
+  ]){
+    gain.cancelScheduledValues(now);
+  }
+
+  reverbGain.gain.setTargetAtTime(FX.reverb?.65:0,now,.015);
+  echoGain.gain.setTargetAtTime(FX.echo?.55:0,now,.015);
+  distortionGain.gain.setTargetAtTime(FX.distortion?.75:0,now,.015);
+}
+
+function setMasterVolume(value){
+  volume=clamp(Number(value),0,3);
+
+  if(masterGain){
+    masterGain.gain.rampTo(volume,.03);
+  }
+
+  document.getElementById("volumeValue").textContent=
+    Math.round(volume*100)+"%";
+}
+
+createAudioEngine().catch(error=>{
+  console.error(error);
+  setStatus("Could not load piano samples");
+});
+
+/* ==========================================
+   VOICE MANAGEMENT
+========================================== */
+
+const heldNotes=new Map();
+const notesByMidi=new Map();
+const sustainedIds=new Set();
+const soundingMidis=new Set();
+
+const activeKeyboardVoices=new Map();
+const activeMouseVoices=new Map();
+
+let voiceSequence=0;
+
+function attackMidi(midi){
+  if(!samplerReady || !audioContextIsRunning())return false;
+  if(soundingMidis.has(midi))return false;
+
+  sampler.triggerAttack(noteName(midi),Tone.now(),.85);
+  soundingMidis.add(midi);
+
+  return true;
+}
+
+function releaseMidi(midi){
+  if(!samplerReady || !soundingMidis.has(midi))return;
+
+  sampler.triggerRelease(noteName(midi),Tone.now());
+  soundingMidis.delete(midi);
+}
+
+function playPendingNotes(){
+  if(!samplerReady || !audioContextIsRunning())return;
+
+  for(const [midi,owners] of notesByMidi){
+    const pending=[...owners].some(id=>{
+      const data=heldNotes.get(id);
+      return data && data.pending;
+    });
+
+    if(!pending)continue;
+
+    if(attackMidi(midi)){
+      for(const id of owners){
+        const data=heldNotes.get(id);
+        if(data)data.pending=false;
+      }
+    }
+  }
+}
+
+function addVoice(id,row,midi,element){
+  if(heldNotes.has(id))return;
+
+  heldNotes.set(id,{
+    row,
+    midi,
+    element,
+    down:true,
+    pending:true
+  });
+
+  if(!notesByMidi.has(midi)){
+    notesByMidi.set(midi,new Set());
+  }
+
+  notesByMidi.get(midi).add(id);
+
+  if(element){
+    element.classList.add("pressed");
+    bloomAt(element);
+  }
+
+  // Request resume directly from the key interaction.
+  unlockAudio().then(playPendingNotes).catch(()=>{});
+
+  // If already running, play immediately.
+  playPendingNotes();
+}
+
+function removeVoice(id){
+  const data=heldNotes.get(id);
+  if(!data)return;
+
+  const owners=notesByMidi.get(data.midi);
+
+  if(owners){
+    owners.delete(id);
+
+    if(owners.size===0){
+      notesByMidi.delete(data.midi);
+      releaseMidi(data.midi);
+    }
+  }
+
+  if(data.element){
+    data.element.classList.remove("pressed");
+  }
+
+  sustainedIds.delete(id);
+  heldNotes.delete(id);
+}
+
+function endVoice(id){
+  const data=heldNotes.get(id);
+  if(!data)return;
+
+  // The visual key always releases immediately.
+  if(data.element){
+    data.element.classList.remove("pressed");
+  }
+
+  if(sustain){
+    data.down=false;
+    sustainedIds.add(id);
+    return;
+  }
+
+  removeVoice(id);
+}
+
+function releaseSustain(){
+  sustain=false;
+
+  for(const id of [...sustainedIds]){
+    removeVoice(id);
+  }
+
+  sustainedIds.clear();
+  updateSustainButton();
+}
+
+function releaseAllHeld(){
+  sustain=false;
+
+  for(const [id,data] of [...heldNotes]){
+    if(data.element){
+      data.element.classList.remove("pressed");
+    }
+    removeVoice(id);
+  }
+
+  activeKeyboardVoices.clear();
+  activeMouseVoices.clear();
+  sustainedIds.clear();
+
+  updateSustainButton();
+}
+
+function releaseRow(row){
+  for(const [id,data] of [...heldNotes]){
+    if(data.row===row){
+      if(data.element)data.element.classList.remove("pressed");
+      removeVoice(id);
+    }
+  }
+
+  for(const key of [...activeKeyboardVoices.keys()]){
+    if(key.startsWith(row+"-")){
+      activeKeyboardVoices.delete(key);
+    }
+  }
+
+  for(const [pointerId,id] of [...activeMouseVoices]){
+    const voice=heldNotes.get(id);
+    if(!voice || voice.row===row){
+      activeMouseVoices.delete(pointerId);
+    }
+  }
+}
+
+/* ==========================================
+   FLOWER EFFECT
+========================================== */
+
+function flowerSVG(colour,center){
+  let petals="";
+
+  for(let i=0;i<8;i++){
+    petals+=`
+      <ellipse cx="24" cy="11" rx="6.3" ry="10"
+        fill="${colour}"
+        transform="rotate(${i*45} 24 24)"
+        stroke="#ffffff66" stroke-width=".6"/>
+    `;
+  }
+
+  return `
+    <svg viewBox="0 0 48 48">
+      ${petals}
+      <circle cx="24" cy="24" r="6.2" fill="${center}"/>
+    </svg>
+  `;
+}
+
+function bloomAt(element){
+  if(!element)return;
+
+  const layer=document.getElementById("flower-layer");
+  const flower=FLOWERS[Math.floor(Math.random()*FLOWERS.length)];
+  const rect=element.getBoundingClientRect();
+
+  const flowerEl=document.createElement("div");
+
+  flowerEl.className="flower";
+  flowerEl.style.left=(rect.left+rect.width/2)+"px";
+  flowerEl.style.top=(rect.top+Math.min(rect.height*.45,90))+"px";
+  flowerEl.style.setProperty("--flower-colour",flower.colour);
+  flowerEl.innerHTML=flowerSVG(flower.colour,flower.center);
+
+  layer.appendChild(flowerEl);
+
+  flowerEl.animate([
+    {opacity:0,transform:"translate(-50%,0) scale(.25) rotate(-20deg)"},
+    {opacity:1,transform:"translate(-50%,-15px) scale(1.15) rotate(10deg)",offset:.18},
+    {opacity:1,transform:"translate(-50%,-75px) scale(1.25) rotate(25deg)",offset:.55},
+    {opacity:0,transform:"translate(-50%,-165px) scale(.75) rotate(65deg)"}
+  ],{
+    duration:1450,
+    easing:"cubic-bezier(.2,.65,.35,1)",
+    fill:"forwards"
+  }).onfinish=()=>flowerEl.remove();
+
+  setTimeout(()=>{
+    if(flowerEl.isConnected)flowerEl.remove();
+  },1800);
+}
+
+/* ==========================================
+   PIANO RENDERING
+========================================== */
+
+function findKeyElement(row,midi){
+  return document.querySelector(
+    `#${ROWS[row].pianoId} [data-midi="${midi}"]`
+  );
+}
+
+function buildRow(row){
+  const config=ROWS[row];
+  const piano=document.getElementById(config.pianoId);
+
+  piano.innerHTML="";
+
+  const start=config.startMidi;
+  const end=start+config.count-1;
+
+  const whiteWidth=parseFloat(
+    getComputedStyle(document.documentElement)
+      .getPropertyValue("--white-width")
+  );
+
+  let rangeLeft=Infinity;
+  let rangeRight=-Infinity;
+
+  for(let midi=start;midi<=end;midi++){
+    const g=keyGeometry(midi);
+    rangeLeft=Math.min(rangeLeft,g.left);
+    rangeRight=Math.max(rangeRight,g.right);
+  }
+
+  const pianoWidth=(rangeRight-rangeLeft)*whiteWidth;
+
+  piano.style.width=pianoWidth+"px";
+  piano.style.minWidth=pianoWidth+"px";
+
+  // White keys.
+  for(let midi=start;midi<=end;midi++){
+    if(isBlack(midi))continue;
+
+    const g=keyGeometry(midi);
+    const key=document.createElement("div");
+
+    key.className="white-key";
+    key.dataset.midi=midi;
+    key.dataset.row=row;
+    key.style.left=((g.left-rangeLeft)*whiteWidth)+"px";
+    key.style.width=((g.right-g.left)*whiteWidth)+"px";
+
+    key.innerHTML=`
+      <span class="note-label">${noteName(midi)}</span>
+      <span class="key-label">${keyForMidi(row,midi)}</span>
+    `;
+
+    piano.appendChild(key);
+  }
+
+  // Black keys.
+  for(let midi=start;midi<=end;midi++){
+    if(!isBlack(midi))continue;
+
+    const g=keyGeometry(midi);
+    const key=document.createElement("div");
+
+    key.className="black-key";
+    key.dataset.midi=midi;
+    key.dataset.row=row;
+    key.style.left=((g.left-rangeLeft)*whiteWidth)+"px";
+    key.style.width=((g.right-g.left)*whiteWidth)+"px";
+
+    key.innerHTML=`
+      <span class="note-label">${noteName(midi)}</span>
+      <span class="key-label">${keyForMidi(row,midi)}</span>
+    `;
+
+    piano.appendChild(key);
+  }
+
+  // Pointer events support mouse, touchscreen and multi-touch.
+  piano.querySelectorAll("[data-midi]").forEach(key=>{
+    const midi=Number(key.dataset.midi);
+
+    key.addEventListener("pointerdown",event=>{
+      if(event.pointerType==="mouse" && event.button!==0)return;
+
+      event.preventDefault();
+
+      const id=`pointer-${row}-${++voiceSequence}`;
+      activeMouseVoices.set(event.pointerId,id);
+
+      try {
+        key.setPointerCapture(event.pointerId);
+      } catch(error) {}
+
+      addVoice(id,row,midi,key);
+    },{passive:false});
+
+    function finish(event){
+      const id=activeMouseVoices.get(event.pointerId);
+      if(!id)return;
+
+      endVoice(id);
+      activeMouseVoices.delete(event.pointerId);
+    }
+
+    key.addEventListener("pointerup",finish);
+    key.addEventListener("pointercancel",finish);
+    key.addEventListener("lostpointercapture",finish);
+  });
+}
+
+/* ==========================================
+   COMPUTER KEYBOARD
+========================================== */
+
+function handleKeyDown(event){
+  if(event.code==="Space"){
+    event.preventDefault();
+
+    if(!sustain){
+      sustain=true;
+      updateSustainButton();
+    }
+    return;
+  }
+
+  if(event.repeat)return;
+
+  for(const row of ["upper","lower"]){
+    if(document.getElementById(row+"Section").classList.contains("hidden")){
+      continue;
+    }
+
+    const item=mappingFor(row).get(event.code);
+    if(!item)continue;
+
+    const element=findKeyElement(row,item.midi);
+    if(!element)continue;
+
+    const physicalKey=`${row}-${event.code}`;
+
+    if(activeKeyboardVoices.has(physicalKey))continue;
+
+    const id=`keyboard-${++voiceSequence}`;
+    activeKeyboardVoices.set(physicalKey,id);
+
+    addVoice(id,row,item.midi,element);
+  }
+}
+
+function handleKeyUp(event){
+  if(event.code==="Space"){
+    if(sustain)releaseSustain();
+    return;
+  }
+
+  for(const row of ["upper","lower"]){
+    const physicalKey=`${row}-${event.code}`;
+    const id=activeKeyboardVoices.get(physicalKey);
+
+    if(!id)continue;
+
+    endVoice(id);
+    activeKeyboardVoices.delete(physicalKey);
+  }
+}
+
+document.addEventListener("keydown",handleKeyDown);
+document.addEventListener("keyup",handleKeyUp);
+window.addEventListener("blur",releaseAllHeld);
+
+document.addEventListener("visibilitychange",()=>{
+  if(document.hidden)releaseAllHeld();
+});
+
+/* ==========================================
+   NAVIGATOR
+========================================== */
+
+function updateNavigator(row){
+  const c=ROWS[row];
+  const selection=document.getElementById(row+"Selection");
+
+  const first=keyGeometry(c.startMidi);
+  const last=keyGeometry(c.startMidi+c.count-1);
+
+  const left=first.left/WHITE_COUNT*100;
+  const right=last.right/WHITE_COUNT*100;
+
+  selection.style.left=left+"%";
+  selection.style.width=(right-left)+"%";
+
+  document.getElementById(row+"RangeLabel").textContent=
+    noteName(c.startMidi)+" – "+noteName(c.startMidi+c.count-1);
+
+  document.getElementById(row+"Count").textContent=
+    c.count+" keys";
+}
+
+function setRowStart(row,midi){
+  const c=ROWS[row];
+
+  midi=clamp(
+    Math.round(midi),
+    PIANO_MIN,
+    PIANO_MAX-c.count+1
+  );
+
+  if(midi===c.startMidi)return;
+
+  releaseRow(row);
+  c.startMidi=midi;
+
+  buildRow(row);
+  updateNavigator(row);
+}
+
+function moveRow(row,amount){
+  setRowStart(row,ROWS[row].startMidi+amount);
+}
+
+function changeKeys(row,amount){
+  const c=ROWS[row];
+  const next=clamp(c.count+amount,5,MAX_KEYS);
+
+  if(next===c.count)return;
+
+  releaseRow(row);
+  c.count=next;
+
+  c.startMidi=clamp(
+    c.startMidi,
+    PIANO_MIN,
+    PIANO_MAX-c.count+1
+  );
+
+  buildRow(row);
+  updateNavigator(row);
+}
+
+function buildNavigator(row){
+  const mini=document.getElementById(row+"Mini");
+  mini.innerHTML="";
+
+  const unit=100/WHITE_COUNT;
+
+  for(let i=0;i<WHITE_COUNT;i++){
+    const key=document.createElement("div");
+    key.className="mini-white";
+    key.style.left=i*unit+"%";
+    key.style.width=unit+"%";
+    mini.appendChild(key);
+  }
+
+  for(let midi=PIANO_MIN;midi<=PIANO_MAX;midi++){
+    if(!isBlack(midi))continue;
+
+    const g=keyGeometry(midi);
+    const key=document.createElement("div");
+
+    key.className="mini-black";
+    key.style.left=g.left/WHITE_COUNT*100+"%";
+    key.style.width=(g.right-g.left)/WHITE_COUNT*100+"%";
+
+    mini.appendChild(key);
+  }
+
+  const selection=document.createElement("div");
+  selection.className="mini-selection";
+  selection.id=row+"Selection";
+  mini.appendChild(selection);
+
+  let dragging=false;
+  let startX=0;
+  let initialStart=0;
+
+  selection.addEventListener("pointerdown",event=>{
+    dragging=true;
+    startX=event.clientX;
+    initialStart=ROWS[row].startMidi;
+
+    selection.setPointerCapture(event.pointerId);
+    event.preventDefault();
+  });
+
+  selection.addEventListener("pointermove",event=>{
+    if(!dragging)return;
+
+    const rect=mini.getBoundingClientRect();
+    const delta=(event.clientX-startX)/rect.width*WHITE_COUNT;
+
+    const target=closestMidiAtWhitePosition(
+      keyGeometry(initialStart).center+delta
+    );
+
+    setRowStart(row,target);
+  });
+
+  selection.addEventListener("pointerup",()=>dragging=false);
+  selection.addEventListener("pointercancel",()=>dragging=false);
+
+  mini.addEventListener("click",event=>{
+    if(event.target===selection)return;
+
+    const rect=mini.getBoundingClientRect();
+    const position=(event.clientX-rect.left)/rect.width*WHITE_COUNT;
+
+    setRowStart(
+      row,
+      closestMidiAtWhitePosition(position)
+    );
+  });
+
+  updateNavigator(row);
+}
+
+/* ==========================================
+   NAVIGATION BUTTONS
+========================================== */
+
+for(const row of ["upper","lower"]){
+  document.getElementById(row+"KeyDown").onclick=()=>moveRow(row,-1);
+  document.getElementById(row+"KeyUp").onclick=()=>moveRow(row,1);
+  document.getElementById(row+"OctDown").onclick=()=>moveRow(row,-12);
+  document.getElementById(row+"OctUp").onclick=()=>moveRow(row,12);
+  document.getElementById(row+"Add").onclick=()=>changeKeys(row,1);
+  document.getElementById(row+"Remove").onclick=()=>changeKeys(row,-1);
+}
+
+/* ==========================================
+   DISPLAY MODES
+========================================== */
+
+function setDisplayMode(mode){
+  releaseAllHeld();
+
+  document.getElementById("upperSection").classList.toggle("hidden",mode==="lower");
+  document.getElementById("lowerSection").classList.toggle("hidden",mode==="upper");
+
+  document.querySelectorAll("[data-mode]").forEach(button=>{
+    button.classList.toggle("active",button.dataset.mode===mode);
+  });
+}
+
+document.querySelectorAll("[data-mode]").forEach(button=>{
+  button.addEventListener("click",()=>setDisplayMode(button.dataset.mode));
+});
+
+/* ==========================================
+   PRESETS
+========================================== */
+
+document.querySelectorAll("[data-preset]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    currentPreset=button.dataset.preset;
+
+    document.querySelectorAll("[data-preset]").forEach(item=>{
+      item.classList.toggle("active",item===button);
+    });
+
+    applyPreset();
+  });
+});
+
+/* ==========================================
+   EFFECT CONTROLS
+========================================== */
+
+document.querySelectorAll(".fx-button").forEach(button=>{
+  button.addEventListener("click",async()=>{
+    const fx=button.dataset.fx;
+    const nextValue=!FX[fx];
+
+    // Resume the context from the actual click.
+    try {
+      await unlockAudio();
+    } catch(error) {
+      console.warn("Audio will retry on the next piano press.",error);
+    }
+
+    FX[fx]=nextValue;
+
+    button.textContent=
+      fx.charAt(0).toUpperCase()+fx.slice(1)+(FX[fx]?" ON":" OFF");
+
+    button.classList.toggle("active",FX[fx]);
+
+    try {
+      if(samplerLoading)await samplerLoading;
+      applyEffects();
+    } catch(error) {
+      console.error("Effect error:",error);
+      setStatus("Effect could not be initialized");
+    }
+  });
+});
+
+/* ==========================================
+   VOLUME AND SUSTAIN
+========================================== */
+
+document.getElementById("volume").addEventListener("input",event=>{
+  setMasterVolume(Number(event.target.value));
+});
+
+function updateSustainButton(){
+  const button=document.getElementById("sustainButton");
+
+  button.textContent=sustain?"Sustain ON":"Sustain OFF";
+  button.classList.toggle("active",sustain);
+}
+
+document.getElementById("sustainButton").addEventListener("click",()=>{
+  unlockAudio().catch(()=>{});
+
+  if(sustain){
+    releaseSustain();
+  }else{
+    sustain=true;
+    updateSustainButton();
+  }
+});
+
+/* ==========================================
+   METRONOME
+========================================== */
+
+let bpm=90;
+let metroTimer=null;
+let metroSynth=null;
+
+async function metronomeTick(){
+  try {
+    await unlockAudio();
+
+    if(!metroSynth){
+      metroSynth=new Tone.Synth({
+        oscillator:{type:"sine"},
+        envelope:{
+          attack:.001,
+          decay:.04,
+          sustain:0,
+          release:.02
+        }
+      }).toDestination();
+    }
+
+    metroSynth.triggerAttackRelease(1050,"32n");
+  } catch(error) {
+    console.error("Metronome audio error:",error);
+  }
+}
+
+function stopMetronome(){
+  if(metroTimer)clearInterval(metroTimer);
+
+  metroTimer=null;
+
+  document.getElementById("metroButton").textContent="Start";
+  document.getElementById("metroButton").classList.remove("active");
+}
+
+function startMetronome(){
+  stopMetronome();
+
+  metronomeTick();
+  metroTimer=setInterval(metronomeTick,60000/bpm);
+
+  document.getElementById("metroButton").textContent="Stop";
+  document.getElementById("metroButton").classList.add("active");
+}
+
+document.getElementById("metroButton").addEventListener("click",()=>{
+  if(metroTimer)stopMetronome();
+  else startMetronome();
+});
+
+document.getElementById("bpm").addEventListener("input",event=>{
+  bpm=Number(event.target.value);
+  document.getElementById("bpmValue").textContent=bpm+" BPM";
+
+  if(metroTimer)startMetronome();
+});
+
+/* ==========================================
+   INITIALIZATION
+========================================== */
+
+function initialize(){
+  buildNavigator("upper");
+  buildNavigator("lower");
+
+  buildRow("upper");
+  buildRow("lower");
+
+  updateNavigator("upper");
+  updateNavigator("lower");
+
+  setMasterVolume(volume);
+}
+
+initialize();
+
+window.addEventListener("resize",()=>{
+  buildRow("upper");
+  buildRow("lower");
+});
+
+</script>
+</body>
+</html>
